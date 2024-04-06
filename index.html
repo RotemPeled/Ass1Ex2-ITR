@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platformer Game with Screen Scroll</title>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; }
+        #gameCanvas { background-color: #87CEEB; }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game settings
+        const gravity = 0.5;
+        const friction = 0.8;
+        const baseJump = -10; // Base jump velocity
+
+        // Player
+        let player = {
+            x: canvas.width / 2,
+            y: canvas.height - 150,
+            width: 20,
+            height: 20,
+            speed: 5,
+            velX: 0,
+            velY: 0,
+            jumping: false
+        };
+
+        // Platform generation settings
+        const platformHeight = 10;  // Height of each platform
+        const gapInCm = 2;  // Gap between platforms in cm
+        const gapInPixels = 75.6;  // Fixed gap in pixels (assuming 2 cm gap at 96 ppi)
+
+        // Initialize the first platform at a position based on the canvas height
+        let initialPlatformY = canvas.height - 50; // You can adjust this value as needed
+
+        // Generate platforms with a 2 cm gap between them
+        let platforms = [];
+        for(let i = 0; i < 10; i++) {
+            platforms.push({
+                x: Math.random() * (canvas.width - 50),
+                y: initialPlatformY - (gapInPixels + platformHeight) * i,
+                width: 100,
+                height: platformHeight
+            });
+        }
+
+        // Key listener arrays to track keyboard input
+        let keys = [];
+        window.addEventListener('keydown', function(e) {
+            keys[e.keyCode] = true; // Set the key as pressed
+            if (e.keyCode == 32 && !player.jumping) { // Space key for jump
+                player.jumping = true;
+                player.velY = baseJump - Math.abs(player.velX); // Higher jump if running faster
+            }
+        });
+        window.addEventListener('keyup', function(e) {
+            keys[e.keyCode] = false; // Set the key as not pressed
+        });
+
+        // Game loop function to update game state and render
+        function updateGame() {
+            // Input handling for right and left movement
+            if (keys[39]) { // right arrow
+                if (player.velX < player.speed) {
+                    player.velX++;
+                }
+            }         
+            if (keys[37]) { // left arrow
+                if (player.velX > -player.speed) {
+                    player.velX--;
+                }
+            }
+
+            // Apply friction and gravity to player's velocity
+            player.velX *= friction;
+            player.velY += gravity;
+
+            // Update player's position based on velocity
+            player.x += player.velX;
+            player.y += player.velY;
+
+            // Implement screen scroll: when player reaches 1/4 of the screen height, scroll up
+            if (player.y < canvas.height / 4) {
+                player.y += Math.abs(player.velY);
+                // Move platforms down and recycle off-screen platforms
+                platforms.forEach(platform => {
+                    platform.y += Math.abs(player.velY);
+                    if (platform.y > canvas.height) {
+                        let highestPlatformY = Math.min(...platforms.map(p => p.y));
+                        platform.y = highestPlatformY - (gapInPixels + platformHeight);
+                        platform.x = Math.random() * (canvas.width - platform.width);
+                    }
+                });
+            }
+
+            // Prevent player from moving beyond canvas boundaries
+            if (player.x >= canvas.width - player.width) {
+                player.x = canvas.width - player.width;
+            } else if (player.x <= 0) {
+                player.x = 0;
+            }
+
+            // Ground collision detection
+            if(player.y >= canvas.height - player.height){
+                player.y = canvas.height - player.height;
+                player.jumping = false;
+                player.velY = 0;
+            }
+
+            // Platform collision detection
+            platforms.forEach(platform => {
+                if (
+                    player.x < platform.x + platform.width &&
+                    player.x + player.width > platform.x &&
+                    player.y + player.height > platform.y &&
+                    player.y + player.height < platform.y + platform.height &&
+                    player.velY >= 0
+                ) {
+                    player.jumping = false;
+                    player.velY = 0;
+                    player.y = platform.y - player.height;
+                }
+            });
+
+            // Clear the canvas for the next frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player
+            ctx.fillStyle = 'red';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Draw platforms
+            platforms.forEach(platform => {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+            });
+
+            // Recursively call updateGame to animate
+            requestAnimationFrame(updateGame);
+        }
+
+        updateGame();
+    </script>
+</body>
+</html>
