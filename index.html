@@ -43,7 +43,7 @@
         // Initialize the first platform at a position based on the canvas height
         let initialPlatformY = canvas.height - 100; // You can adjust this value as needed
 
-        let platformIndex = 0; // A global index counter for platforms
+        let platformIndex = 1; // A global index counter for platforms
 
         // Generate platforms with a 2 cm gap between them
         let platforms = [];
@@ -144,6 +144,9 @@
                         // Calculate the score only if the player has reached a higher platform
                         if(platform.index > lastPlatformIndex) {
                             let pointsEarned = (platform.index - lastPlatformIndex) * 10;
+                            if (platform.index === 1) {
+                                pointsEarned = 10; // First platform should only be 10 points
+                            }
                             score += pointsEarned;
                         }
                         // Update the last platform index
@@ -189,12 +192,20 @@
             platforms.forEach(platform => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                // Check if the platform's index is divisible by 10 and not zero (to avoid labeling the first platform)
+                if (platform.index % 10 === 0) {
+                    ctx.fillStyle = 'white'; // Text color
+                    ctx.textAlign = 'center'; // Center text on the platform
+                    ctx.font = 'bold 12px Arial'; // Font style for the text
+                    // Adjust the y value to position the text above the platform
+                    ctx.fillText(platform.index, platform.x + platform.width / 2, platform.y + platform.height / 2 + 4);
+                }
             });
 
             function drawScore() {
                 ctx.font = '16px Arial';
                 ctx.fillStyle = 'white';
-                ctx.fillText('Score: ' + score, 8, 20);
+                ctx.fillText('Score: ' + score, 40, 20);
             }
             
             // Call this function at the end of your updateGame() function
