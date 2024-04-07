@@ -19,11 +19,14 @@
         const gravity = 0.5;
         const friction = 0.8;
         const baseJump = -10; // Base jump velocity
+        let score = 0; // Initialize score
+        let lastPlatformIndex = -1; // Tracks the last platform index the player was on
+
 
         // Player
         let player = {
             x: canvas.width / 2,
-            y: canvas.height - 150,
+            y: canvas.height - 20,
             width: 20,
             height: 20,
             speed: 5,
@@ -38,7 +41,9 @@
         const gapInPixels = 75.6;  // Fixed gap in pixels (assuming 2 cm gap at 96 ppi)
 
         // Initialize the first platform at a position based on the canvas height
-        let initialPlatformY = canvas.height - 50; // You can adjust this value as needed
+        let initialPlatformY = canvas.height - 100; // You can adjust this value as needed
+
+        let platformIndex = 0; // A global index counter for platforms
 
         // Generate platforms with a 2 cm gap between them
         let platforms = [];
@@ -47,7 +52,9 @@
                 x: Math.random() * (canvas.width - 50),
                 y: initialPlatformY - (gapInPixels + platformHeight) * i,
                 width: 100,
-                height: platformHeight
+                height: platformHeight,
+                index: platformIndex++, // Assign a unique index
+                used: false // Score has not been used
             });
         }
 
@@ -93,6 +100,11 @@
                 platforms.forEach(platform => {
                     platform.y += Math.abs(player.velY);
                     if (platform.y > canvas.height) {
+                        // Reset the platform 'used' status when recycling
+                        platform.used = false;
+                        // Assign a new unique index to the recycled platform
+                        platform.index = platformIndex++;
+
                         let highestPlatformY = Math.min(...platforms.map(p => p.y));
                         platform.y = highestPlatformY - (gapInPixels + platformHeight);
                         platform.x = Math.random() * (canvas.width - platform.width);
@@ -126,6 +138,23 @@
                     player.jumping = false;
                     player.velY = 0;
                     player.y = platform.y - player.height;
+                    // Check if the player has landed on a new platform and update the score
+                    if(lastPlatformIndex !== platform.index && !platform.used) {
+                        // Calculate the score only if the player has reached a higher platform
+                        if(platform.index > lastPlatformIndex) {
+                            let pointsEarned = (platform.index - lastPlatformIndex) * 10;
+                            score += pointsEarned;
+                        }
+                        // Update the last platform index
+                        lastPlatformIndex = platform.index;
+
+                        // Mark all platforms with a lower index as used
+                        platforms.forEach(p => {
+                            if (p.index < platform.index) {
+                                p.used = true;
+                            }
+                        });
+                    }
                 }
             });
 
@@ -141,6 +170,15 @@
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
             });
+
+            function drawScore() {
+                ctx.font = '16px Arial';
+                ctx.fillStyle = 'white';
+                ctx.fillText('Score: ' + score, 8, 20);
+            }
+            
+            // Call this function at the end of your updateGame() function
+            drawScore();            
 
             // Recursively call updateGame to animate
             requestAnimationFrame(updateGame);
