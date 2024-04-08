@@ -21,6 +21,7 @@
         const baseJump = -10; // Base jump velocity
         let score = 0; // Initialize score
         let lastPlatformIndex = -1; // Tracks the last platform index the player was on
+        let hasScrolled = false;
 
         // Player
         let player = {
@@ -69,6 +70,77 @@
             }
             return null; // No enemy generated
         }
+
+        let topScores = []; // Assuming this is declared globally
+
+        function updateLeaderboard(newScore) {
+            topScores.push(newScore);
+            topScores.sort((a, b) => b - a); // Sort scores in descending order
+            topScores = topScores.slice(0, 10); // Keep only top 10 scores
+        }
+
+        function displayLeaderboard() {
+            ctx.font = '16px Arial';
+            ctx.fillText('Top Scores:', canvas.width / 2, canvas.height / 2 + 40);
+
+            topScores.forEach((score, index) => {
+                ctx.fillText(`${index + 1}. ${score}`, canvas.width / 2, canvas.height / 2 + 60 + 20 * index);
+            });
+        }
+
+        function displayGameOver() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.fillStyle = 'black';
+            ctx.font = '30px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+        
+            // Show the 'Play again' button
+            const button = document.createElement('button');
+            button.innerText = 'Play Again';
+            button.style.position = 'absolute';
+            button.style.left = '50%';
+            button.style.top = '60%';
+            button.style.transform = 'translateX(-50%)';
+            button.style.width = '150px'; // Width of the button
+            button.style.height = '50px'; // Height of the button
+            button.style.fontSize = '20px'; // Font size of the text on the button
+            button.style.padding = '10px 20px'; // Padding inside the button
+            button.style.cursor = 'pointer'; // Cursor to pointer to indicate it's clickable
+            document.body.appendChild(button);
+            button.onclick = () => {
+                document.body.removeChild(button);
+                restartGame();
+            };
+        
+            displayLeaderboard();
+        }
+        
+        function restartGame() {
+            // Reset game state
+            player.isDead = false;
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 20;
+            score = 0;
+            lastPlatformIndex = -1; // Reset this as well
+            hasScrolled = false;
+            platformIndex = 1; // Reset platform index
+            platforms = []; // Clear the platforms array
+            for(let i = 0; i < 10; i++) { // Recreate the platforms
+                platforms.push({
+                    x: Math.random() * (canvas.width - 50),
+                    y: initialPlatformY - (gapInPixels + platformHeight) * i,
+                    width: 100,
+                    height: platformHeight,
+                    index: platformIndex++,
+                    score_been_used: false, 
+                    timeOnPlatform: 0,
+                    falling: false,
+                    enemy: generateEnemy()
+                });
+            }
+            updateGame(); // Start the game loop again
+        }        
         
         // Key listener arrays to track keyboard input
         let keys = [];
@@ -85,6 +157,11 @@
 
         // Game loop function to update game state and render
         function updateGame() {
+            if (player.isDead || (hasScrolled == true && player.y >= canvas.height - player.height)) {
+                updateLeaderboard(score); // Add this line before displaying the game over
+                displayGameOver();
+                return; // Stop the game loop when the player is dead
+            }
             // Input handling for right and left movement
             if (keys[39]) { // right arrow
                 if (player.velX < player.speed) {
@@ -108,6 +185,7 @@
             // Implement screen scroll: when player reaches 1/4 of the screen height, scroll up
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
+                hasScrolled = true; // Set the flag to true as the screen has scrolled
 
                 // Move platforms down and recycle off-screen platforms
                 platforms.forEach(platform => {
@@ -127,6 +205,10 @@
                 });
             }
 
+            if (hasScrolled && player.y > canvas.height) {
+                player.isDead = true; // The player is now considered dead
+            }
+            
             platforms.forEach(platform => {
                 if (platform.enemy) {
                     if (platform.enemy.type === 'type2') {
