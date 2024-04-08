@@ -26,6 +26,9 @@
         backgroundImage.src = 'icyTower.jpg'; 
         const playerImage = new Image();
         playerImage.src = 'player.jpg'; 
+        const platformsImage = new Image();
+        platformsImage.src = 'picture3.png'; 
+        
         
         // Move the canvas and context retrieval outside of the onload to be globally accessible
         const canvas = document.getElementById('gameCanvas');
@@ -105,12 +108,12 @@
         }
 
         function displayGameOver() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height); 
             ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
             // Draw white background for text
             ctx.fillStyle = 'white';
-            ctx.fillRect(canvas.width / 2 - 140, canvas.height / 2 - 70, 280, 300); // Adjust the size and position as needed
+            ctx.fillRect(canvas.width / 2 - 140, canvas.height / 2 - 70, 280, 300); 
 
             ctx.fillStyle = 'black';
             ctx.font = 'bold 30px Arial';
@@ -328,12 +331,11 @@
 
             // Draw platforms and enemies
             platforms.forEach(platform => {
-                ctx.fillStyle = 'black';
-                ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                ctx.drawImage(platformsImage, platform.x, platform.y, platform.width, platform.height);
                 
                 // Check if the platform's index is divisible by 10 and not zero (to avoid labeling the first platform)
                 if (platform.index % 10 === 0) {
-                    ctx.fillStyle = 'white'; // Text color
+                    ctx.fillStyle = 'black'; // Text color
                     ctx.textAlign = 'center'; // Center text on the platform
                     ctx.font = 'bold 13px Arial'; // Font style for the text
                     // Adjust the y value to position the text above the platform
