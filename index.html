@@ -22,7 +22,6 @@
         let score = 0; // Initialize score
         let lastPlatformIndex = -1; // Tracks the last platform index the player was on
 
-
         // Player
         let player = {
             x: canvas.width / 2,
@@ -32,12 +31,12 @@
             speed: 5,
             velX: 0,
             velY: 0,
-            jumping: false
+            jumping: false,
+            isDead: false // Track if the player is dead
         };
 
         // Platform generation settings
         const platformHeight = 10;  // Height of each platform
-        const gapInCm = 2;  // Gap between platforms in cm
         const gapInPixels = 75.6;  // Fixed gap in pixels (assuming 2 cm gap at 96 ppi)
 
         // Initialize the first platform at a position based on the canvas height
@@ -56,10 +55,21 @@
                 index: platformIndex++,
                 score_been_used: false, 
                 timeOnPlatform: 0,
-                falling: false 
+                falling: false,
+                enemy: generateEnemy()
             });
         }
 
+        function generateEnemy() {
+            // Only create an enemy with a 5% chance
+            if (Math.random() > 0.95) {
+                let type = Math.random() < 0.5 ? 'type1' : 'type2'; // 50% chance for each type
+                let x = type === 'type1' ? (100 - 20) / 2 : 0;
+                return { type: type, x: x, y: 0, width: 20, height: 20, moveDirection: 1 };
+            }
+            return null; // No enemy generated
+        }
+        
         // Key listener arrays to track keyboard input
         let keys = [];
         window.addEventListener('keydown', function(e) {
@@ -98,19 +108,45 @@
             // Implement screen scroll: when player reaches 1/4 of the screen height, scroll up
             if (player.y < canvas.height / 4) {
                 player.y += Math.abs(player.velY);
+
                 // Move platforms down and recycle off-screen platforms
                 platforms.forEach(platform => {
-                    platform.y += Math.abs(player.velY);
+                    let deltaY = Math.abs(player.velY);
+                    platform.y += deltaY;
+
                     if (platform.y > canvas.height) {
                         platform.score_been_used = false;
                         platform.index = platformIndex++;
-                        let highestPlatformY = Math.min(...platforms.map(p => p.y));
-                        platform.y = highestPlatformY - (gapInPixels + platformHeight);
+                        // Find the highest platform's Y position, meaning the smallest Y value
+                        let lowestPlatformY = Math.min(...platforms.map(p => p.y));
+                        platform.y = lowestPlatformY - gapInPixels - platformHeight; // Ensure the platform appears above
                         platform.x = Math.random() * (canvas.width - platform.width);
                         platform.timeOnPlatform = 0; // Reset the time on platform
+                        platform.enemy = generateEnemy(); // Decide to add an enemy to the recycled platform
                     }
                 });
             }
+
+            platforms.forEach(platform => {
+                if (platform.enemy) {
+                    if (platform.enemy.type === 'type2') {
+                        platform.enemy.x += platform.enemy.moveDirection * 2; // Adjust speed as necessary
+                        if (platform.enemy.x > platform.width - platform.enemy.width || platform.enemy.x < 0) {
+                            platform.enemy.moveDirection *= -1;
+                        }
+                    }
+
+                    // Check for collision with the player
+                    if (
+                        player.x < platform.x + platform.enemy.x + platform.enemy.width &&
+                        player.x + player.width > platform.x + platform.enemy.x &&
+                        player.y < platform.y + platform.enemy.y + platform.enemy.height &&
+                        player.y + player.height > platform.y + platform.enemy.y
+                    ) {
+                        player.isDead = true;
+                    }
+                }
+            });
 
             // Prevent player from moving beyond canvas boundaries
             if (player.x >= canvas.width - player.width) {
@@ -188,10 +224,11 @@
             ctx.fillStyle = 'red';
             ctx.fillRect(player.x, player.y, player.width, player.height);
 
-            // Draw platforms
+            // Draw platforms and enemies
             platforms.forEach(platform => {
                 ctx.fillStyle = 'black';
                 ctx.fillRect(platform.x, platform.y, platform.width, platform.height);
+                
                 // Check if the platform's index is divisible by 10 and not zero (to avoid labeling the first platform)
                 if (platform.index % 10 === 0) {
                     ctx.fillStyle = 'white'; // Text color
@@ -199,6 +236,13 @@
                     ctx.font = 'bold 12px Arial'; // Font style for the text
                     // Adjust the y value to position the text above the platform
                     ctx.fillText(platform.index, platform.x + platform.width / 2, platform.y + platform.height / 2 + 4);
+                }
+
+                // Draw enemy if exists
+                if (platform.enemy) {
+                    let enemy = platform.enemy;
+                    ctx.fillStyle = enemy.type === 'type1' ? 'green' : 'orange';
+                    ctx.fillRect(platform.x + enemy.x, platform.y - enemy.height, enemy.width, enemy.height);
                 }
             });
 
