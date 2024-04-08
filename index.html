@@ -20,14 +20,16 @@
     </style>    
 </head>
 <body>
-    <canvas id="gameCanvas" width="600" height="650"></canvas>
+    <canvas id="gameCanvas" width="700" height="650"></canvas>
     <script>
         const backgroundImage = new Image();
-        backgroundImage.src = 'icyTower.jpg'; 
+        backgroundImage.src = 'icyTower.png'; 
         const playerImage = new Image();
         playerImage.src = 'player.jpg'; 
         const platformsImage = new Image();
-        platformsImage.src = 'picture3.png'; 
+        platformsImage.src = 'platforms.png'; 
+        const enemyImage = new Image();
+        enemyImage.src = 'enemy.png'; 
         
         
         // Move the canvas and context retrieval outside of the onload to be globally accessible
@@ -64,13 +66,18 @@
 
         let platformIndex = 1; // A global index counter for platforms
 
+        function getRandomWidth() {
+            const widths = [150, 250, 350];
+            return widths[Math.floor(Math.random() * widths.length)];
+        }
+        
         // Generate platforms with a 2 cm gap between them
         let platforms = [];
         for(let i = 0; i < 10; i++) {
             platforms.push({
                 x: Math.random() * (canvas.width - 50),
                 y: initialPlatformY - (gapInPixels + platformHeight) * i,
-                width: 200,
+                width: getRandomWidth(), // Call a function to get random width
                 height: platformHeight,
                 index: platformIndex++,
                 score_been_used: false, 
@@ -85,7 +92,7 @@
             if (Math.random() > 0.95) {
                 let type = Math.random() < 0.5 ? 'type1' : 'type2'; // 50% chance for each type
                 let x = type === 'type1' ? (100 - 20) / 2 : 0;
-                return { type: type, x: x, y: 0, width: 20, height: 20, moveDirection: 1 };
+                return { type: type, x: x, y: 0, width: 40, height: 40, moveDirection: 1 };
             }
             return null; // No enemy generated
         }
@@ -100,10 +107,10 @@
 
         function displayLeaderboard() {
             ctx.font = '16px Arial';
-            ctx.fillText('Top Scores:', canvas.width / 2, canvas.height / 2 + 20);
+            ctx.fillText('Top Scores:', canvas.width / 2, canvas.height / 2 - 100);
 
             topScores.forEach((score, index) => {
-                ctx.fillText(`${index + 1}. ${score} points`, canvas.width / 2, canvas.height / 2 + 40 + 20 * index);
+                ctx.fillText(`${index + 1}. ${score} points`, canvas.width / 2, canvas.height /2 - 60 + 20 * index);
             });
         }
 
@@ -113,19 +120,19 @@
 
             // Draw white background for text
             ctx.fillStyle = 'white';
-            ctx.fillRect(canvas.width / 2 - 140, canvas.height / 2 - 70, 280, 300); 
+            ctx.fillRect(canvas.width / 2 - 125, canvas.height / 2 - 130, 250, 270); 
 
             ctx.fillStyle = 'black';
             ctx.font = 'bold 30px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 -200);
         
             // Show the 'Play again' button
             const button = document.createElement('button');
             button.innerText = 'Play Again';
             button.style.position = 'absolute';
             button.style.left = '50%';
-            button.style.top = '35%';
+            button.style.top = '75%';
             button.style.transform = 'translate(-50%, -50%)';
             button.style.width = '150px'; // Width of the button
             button.style.height = '50px'; // Height of the button
@@ -155,7 +162,7 @@
                 platforms.push({
                     x: Math.random() * (canvas.width - 50),
                     y: initialPlatformY - (gapInPixels + platformHeight) * i,
-                    width: 200,
+                    width: getRandomWidth(), // Call a function to get random width
                     height: platformHeight,
                     index: platformIndex++,
                     score_been_used: false, 
@@ -224,6 +231,7 @@
                         let lowestPlatformY = Math.min(...platforms.map(p => p.y));
                         platform.y = lowestPlatformY - gapInPixels - platformHeight; // Ensure the platform appears above
                         platform.x = Math.random() * (canvas.width - platform.width);
+                        width: getRandomWidth(), // Call a function to get random width
                         platform.timeOnPlatform = 0; // Reset the time on platform
                         platform.enemy = generateEnemy(); // Decide to add an enemy to the recycled platform
                     }
@@ -245,9 +253,9 @@
 
                     // Check for collision with the player
                     if (
-                        player.x < platform.x + platform.enemy.x + platform.enemy.width &&
-                        player.x + player.width > platform.x + platform.enemy.x &&
-                        player.y < platform.y + platform.enemy.y + platform.enemy.height &&
+                        player.x < platform.x + platform.enemy.x + platform.enemy.width - 22 &&
+                        player.x + player.width - 17 > platform.x + platform.enemy.x &&
+                        player.y + 40 < platform.y + platform.enemy.y + platform.enemy.height &&
                         player.y + player.height > platform.y + platform.enemy.y
                     ) {
                         player.isDead = true;
@@ -272,8 +280,8 @@
             // Platform collision detection
             platforms.forEach(platform => {
                 if (
-                    player.x < platform.x + platform.width &&
-                    player.x + player.width > platform.x &&
+                    player.x < platform.x + platform.width - 22 &&
+                    player.x + player.width - 17 > platform.x &&
                     player.y + player.height > platform.y &&
                     player.y + player.height < platform.y + platform.height &&
                     player.velY >= 0
@@ -345,14 +353,14 @@
                 // Draw enemy if exists
                 if (platform.enemy) {
                     let enemy = platform.enemy;
-                    ctx.fillStyle = enemy.type === 'type1' ? 'green' : 'orange';
-                    ctx.fillRect(platform.x + enemy.x, platform.y - enemy.height, enemy.width, enemy.height);
+                    ctx.drawImage(enemyImage, platform.x + enemy.x, platform.y - enemy.height, enemy.width, enemy.height);
                 }
+
             });
 
             function drawScore() {
                 ctx.font = '20px Arial';
-                ctx.fillStyle = 'white';
+                ctx.fillStyle = 'black';
                 ctx.fillText('Score: ' + score, 50, 20);
             }
             
