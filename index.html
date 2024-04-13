@@ -113,12 +113,28 @@
             }
 
             function displayLeaderboard() {
-                ctx.font = '16px Arial';
-                ctx.fillText('Top Scores:', canvas.width / 2, canvas.height / 2 - 100);
-
+                ctx.font = '22px Arial';
+                ctx.fillStyle = 'black';
+                ctx.fillText('Top Scores:', canvas.width / 2, canvas.height / 2 - 90);
+            
                 topScores.forEach((score, index) => {
+                    ctx.font = '16px Arial';                   
                     ctx.fillText(`${index + 1}. ${score} points`, canvas.width / 2, canvas.height /2 - 60 + 20 * index);
                 });
+            }
+            
+            function drawRoundedRect(ctx, x, y, width, height, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+                ctx.lineTo(x + radius, y + height);
+                ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+                ctx.lineTo(x, y + radius);
+                ctx.quadraticCurveTo(x, y, x + radius, y);
+                ctx.closePath();
             }
 
             function displayGameOver() {
@@ -126,14 +142,22 @@
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
                 // Draw white background for text
-                ctx.fillStyle = 'white';
-                ctx.fillRect(canvas.width / 2 - 125, canvas.height / 2 - 130, 250, 270); 
+                ctx.fillStyle = 'MintCream';
+                const rectX = canvas.width / 2 - 100;
+                const rectY = canvas.height / 2 - 130;
+                const rectWidth = 200;
+                const rectHeight = 270;
+                const cornerRadius = 20; // Adjust the corner radius as needed
 
-                ctx.fillStyle = 'black';
-                ctx.font = 'bold 30px Arial';
+                drawRoundedRect(ctx, rectX, rectY, rectWidth, rectHeight, cornerRadius);
+                ctx.fill();
+                ctx.fillStyle = 'MintCream';
+                ctx.font = 'bold 45px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 -200);
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 -180);
             
+                displayLeaderboard();
+
                 // Show the 'Play again' button
                 const button = document.createElement('button');
                 button.innerText = 'Play Again';
@@ -151,9 +175,16 @@
                     document.body.removeChild(button);
                     restartGame();
                 };
-            
-                displayLeaderboard();
             }
+
+            function drawTimer() {
+                if (player.hasStarPower && player.starPowerTimer > 0) {
+                    ctx.font = '20px Arial';
+                    ctx.fillStyle = 'black'; // Color of the timer text
+                    ctx.textAlign = 'right'; // Align text to the right
+                    ctx.fillText('Star: ' + player.starPowerTimer.toFixed(2), canvas.width - 20, 30);
+                }
+            }            
 
             function restartGame() {
                 // Reset game state
@@ -261,15 +292,15 @@
                 }
 
                 if (hasScrolled && player.y > canvas.height) {
-                    player.isDead = true; // The player is now considered dead
+                    player.isDead = true; 
                 }
                 
                 // Decrease star power timer if active
                 if (player.hasStarPower) {
-                    player.starPowerTimer -= 1/60; // assuming the game runs at 60 FPS
+                    player.starPowerTimer -= 1/60; 
                     if (player.starPowerTimer <= 0) {
                         player.hasStarPower = false;
-                        player.starPowerTimer = 0; // Reset timer to prevent it from going negative
+                        player.starPowerTimer = 0; 
                     }
                 }
 
@@ -386,9 +417,7 @@
                 // Filter out platforms that have fallen below the canvas
                 platforms = platforms.filter(platform => platform.y <= canvas.height);
 
-                // Clear the canvas for the next frame
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
                 ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
                 // Draw player
@@ -426,7 +455,8 @@
                 }
                 
                 // Call this function at the end of your updateGame() function
-                drawScore();            
+                drawScore();   
+                drawTimer(); // Draw the timer for star power         
 
                 // Recursively call updateGame to animate
                 requestAnimationFrame(updateGame);
