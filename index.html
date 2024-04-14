@@ -76,10 +76,11 @@
             // Generate platforms with a 2 cm gap between them
             let platforms = [];
             for(let i = 0; i < 10; i++) {
+                let platformWidth = getRandomWidth(); 
                 platforms.push({
-                    x: Math.random() * (canvas.width - 50),
+                    x: Math.random() * (canvas.width - platformWidth) + platformWidth * 0.25, // Adjusted to keep platforms within bounds
                     y: initialPlatformY - (gapInPixels + platformHeight) * i,
-                    width: getRandomWidth(), // Call a function to get random width
+                    width: platformWidth,
                     height: platformHeight,
                     index: platformIndex++,
                     score_been_used: false, 
@@ -179,12 +180,14 @@
 
             function drawTimer() {
                 if (player.hasStarPower && player.starPowerTimer > 0) {
+                    ctx.save(); // Save the current state before drawing the timer
                     ctx.font = '20px Arial';
-                    ctx.fillStyle = 'black'; // Color of the timer text
-                    ctx.textAlign = 'right'; // Align text to the right
+                    ctx.fillStyle = 'black';
+                    ctx.textAlign = 'right'; 
                     ctx.fillText('Star: ' + player.starPowerTimer.toFixed(2), canvas.width - 20, 30);
+                    ctx.restore(); // Restore the state so that text alignment changes don't affect other text
                 }
-            }            
+            }               
 
             function restartGame() {
                 // Reset game state
@@ -197,10 +200,11 @@
                 platformIndex = 1; // Reset platform index
                 platforms = []; // Clear the platforms array
                 for(let i = 0; i < 10; i++) { // Recreate the platforms
+                    let platformWidth = getRandomWidth(); 
                     platforms.push({
-                        x: Math.random() * (canvas.width - 50),
+                        x: Math.random() * (canvas.width - platformWidth) + platformWidth * 0.25, // Adjusted to keep platforms within bounds
                         y: initialPlatformY - (gapInPixels + platformHeight) * i,
-                        width: getRandomWidth(), // Call a function to get random width
+                        width: platformWidth,
                         height: platformHeight,
                         index: platformIndex++,
                         score_been_used: false, 
@@ -264,7 +268,7 @@
                 if (player.y < canvas.height / 4) {
                     player.y += Math.abs(player.velY);
                     hasScrolled = true; // Set the flag to true as the screen has scrolled
-
+                    let platformWidth = getRandomWidth(); 
                     // Move platforms down and recycle off-screen platforms
                     platforms.forEach(platform => {
                         let deltaY = Math.abs(player.velY);
@@ -280,8 +284,8 @@
                             // Find the highest platform's Y position, meaning the smallest Y value
                             let lowestPlatformY = Math.min(...platforms.map(p => p.y));
                             platform.y = lowestPlatformY - gapInPixels - platformHeight; // Ensure the platform appears above
-                            platform.x = Math.random() * (canvas.width - platform.width);
-                            platform.width = getRandomWidth(), // Call a function to get random width
+                            platform.x = Math.random() * (canvas.width - platformWidth) + platformWidth * 0.25, // Adjusted to keep platforms within bounds
+                            platform.width = platformWidth, // Call a function to get random width
                             platform.timeOnPlatform = 0; // Reset the time on platform
                             platform.enemy = generateEnemy(); // Decide to add an enemy to the recycled platform
                             platform.isMoving = Math.random() < 0.06; // Decide again if recycled platform should move
@@ -306,13 +310,16 @@
 
                 platforms.forEach(platform => {
                     if (platform.isMoving) {
-                        platform.y += platform.moveDirection;
-                
-                        // Reverse direction if the platform has moved 25 pixels up or down
+                        platform.y += platform.moveDirection; 
+                    
+                        // Ensure precise reversal by checking if the platform exceeds its movement boundaries
                         if (platform.y <= platform.originalY - platform.moveDistance || platform.y >= platform.originalY + platform.moveDistance) {
                             platform.moveDirection *= -1;
+                            // Correct any overshoot to keep the platform exactly at the boundary
+                            platform.y = platform.moveDirection === 1 ? platform.originalY - platform.moveDistance : platform.originalY + platform.moveDistance;
                         }
                     }
+                    
 
                     let starWidth = 20;  // Assuming a star width
                     let starHeight = 20; // Assuming a star height
@@ -449,14 +456,16 @@
                 });
 
                 function drawScore() {
+                    ctx.save(); // Save the current state to restore after drawing the score
                     ctx.font = '20px Arial';
                     ctx.fillStyle = 'black';
-                    ctx.fillText('Score: ' + score, 60, 25);
-                }
+                    ctx.textAlign = 'left'; // Explicitly set the alignment to left
+                    ctx.fillText('Score: ' + score, 20, 25);
+                    ctx.restore(); // Restore the state
+                }                
                 
-                // Call this function at the end of your updateGame() function
+                drawTimer();        
                 drawScore();   
-                drawTimer(); // Draw the timer for star power         
 
                 // Recursively call updateGame to animate
                 requestAnimationFrame(updateGame);
